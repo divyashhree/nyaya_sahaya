@@ -2,7 +2,7 @@ import ray
 import logging
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from faiss import IndexFlatL2  # Assuming using L2 distance for simplicity
 

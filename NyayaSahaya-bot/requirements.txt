@@ -1,21 +1,25 @@
-langchain
-pypdf
-transformers
-sentence-transformers
-accelerate
-faiss-cpu
-streamlit
-langchain-fireworks
-einops
-langchain-together
-ray
-unstructured
-htbuilder
-python-dotenv
-together
-langchain_community
-langchain_huggingface
+# Core backend
 fastapi
 uvicorn
-googletrans==4.0.0-rc1
-httpx==0.18.2
+python-dotenv
+pydantic
+
+# LangChain (ONLY what we need)
+langchain
+langchain-community
+langchain-core
+
+# Vector search
+faiss-cpu
+sentence-transformers
+
+# LLM provider
+together
+
+# File handling
+pypdf
+python-multipart
+
+# Utilities
+requests
+aiohttp

@@ -38,11 +38,8 @@ const AboutUs = () => {
         <h2>Meet Our Team</h2>
         <div className="team-grid">
           {[
-            { name: "Sumadhva Krishna", github: "https://github.com/InatanayaXSk/" },
-            { name: "Varun Gowda", github: "https://github.com/GowdaVarun" },
-            { name: "Apurva Sankol", github: "https://github.com/Apps-1-2-3" },
-            { name: "Jason Rohith", github: "https://github.com/JasonAlva" },
-            { name: "Maheshkumar", github: "https://github.com/Anonymous-2004" }
+            { name: "Divyashree", github: "https://github.com/divyashhree/" },
+            { name: "Greeshma", github: "https://github.com/GreeshmaShivakumar" }
           ].map((member, index) => (
             <div key={index} className="team-member-card" onClick={() => window.open(member.github, "_blank")}>
               <div className="team-member-avatar">{member.name[0]}</div>

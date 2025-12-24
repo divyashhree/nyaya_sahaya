@@ -8,3 +8,7 @@
 /NyayaSahaya-bot/.env
 /NyayaSahaya/venv
 /NyayaSahaya/.gitignore
+venv/
+.env
+__pycache__/
+*.pyc
