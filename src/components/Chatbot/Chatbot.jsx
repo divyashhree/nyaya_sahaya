@@ -3,7 +3,7 @@ import './Chatbot.css';
 
 function Chatbot() {
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "👋 Hello! I'm your NyayaSahaya AI Assistant. Ask me anything about Indian law, legal procedures, or your case!" }
+    { sender: "bot", text: "Welcome to NyayaSahaya Legal Assistant. I can help you with Indian law, legal procedures, and case analysis. How may I assist you today?" }
   ]);
   const [input, setInput] = useState("");
   const [error, setError] = useState(null);
@@ -45,7 +45,7 @@ function Chatbot() {
     // Add a message showing file upload
     setMessages(prev => [...prev, { 
       sender: "user", 
-      text: `📎 Uploaded: ${file.name}`,
+      text: `Document uploaded: ${file.name}`,
       isFile: true 
     }]);
 
@@ -77,18 +77,18 @@ function Chatbot() {
           try {
             const analysisObj = JSON.parse(data.analysis);
             const formattedAnalysis = `
-📄 **Document Analysis:**
+DOCUMENT ANALYSIS REPORT
 
-**Type:** ${analysisObj.document_type || 'Unknown'}
-**Impact:** ${analysisObj.impact || 'N/A'}
-**Weight:** ${analysisObj.weight || 'N/A'}/100
+Document Type: ${analysisObj.document_type || 'Unknown'}
+Impact Level: ${analysisObj.impact || 'N/A'}
+Evidence Weight: ${analysisObj.weight || 'N/A'}/100
 
-**Key Points:**
-${analysisObj.key_points?.map((point, i) => `${i + 1}. ${point}`).join('\n') || 'None'}
+Key Points:
+${analysisObj.key_points?.map((point, i) => `${i + 1}. ${point}`).join('\n') || 'None identified'}
 
-**Summary:** ${analysisObj.summary || 'No summary available'}
+Summary: ${analysisObj.summary || 'No summary available'}
 
-You can now ask me questions about this document!
+You may now ask questions about this document.
             `;
             setMessages(prev => [...prev, { 
               sender: "bot", 
@@ -190,12 +190,12 @@ You can now ask me questions about this document!
         <div className="chat-header-modern">
           <div className="header-left">
             <div className="bot-avatar-modern">
-              <span className="avatar-icon">🤖</span>
+              <span className="avatar-icon">AI</span>
               <span className="status-indicator"></span>
             </div>
             <div className="header-info">
-              <h2 className="chat-title-modern">NyayaSahaya AI</h2>
-              <p className="chat-status">Always here to help • Powered by AI</p>
+              <h2 className="chat-title-modern">Legal Assistant</h2>
+              <p className="chat-status">Powered by Artificial Intelligence</p>
             </div>
           </div>
           <div className="header-actions">
@@ -203,13 +203,13 @@ You can now ask me questions about this document!
               className="icon-button" 
               title="New Chat"
               onClick={() => {
-                setMessages([{ sender: "bot", text: "👋 Hello! I'm your NyayaSahaya AI Assistant. Ask me anything about Indian law, legal procedures, or your case!" }]);
+                setMessages([{ sender: "bot", text: "Welcome to NyayaSahaya Legal Assistant. I can help you with Indian law, legal procedures, and case analysis. How may I assist you today?" }]);
                 setUploadedFile(null);
                 setExtractedText("");
                 setError(null);
               }}
             >
-              🔄
+              ⟳
             </button>
           </div>
         </div>
@@ -218,11 +218,11 @@ You can now ask me questions about this document!
         {uploadedFile && (
           <div className="file-indicator">
             <div className="file-info">
-              <span className="file-icon">📄</span>
+              <span className="file-icon">▪</span>
               <span className="file-name">{uploadedFile.name}</span>
             </div>
             <button className="clear-file-btn" onClick={clearFile} title="Remove file">
-              ✕
+              ×
             </button>
           </div>
         )}
@@ -234,7 +234,7 @@ You can now ask me questions about this document!
               className={`message-modern ${msg.sender === "user" ? "user-message-modern" : "bot-message-modern"}`}
             >
               <div className="message-avatar">
-                {msg.sender === "user" ? "👤" : "🤖"}
+                {msg.sender === "user" ? "U" : "AI"}
               </div>
               <div className="message-bubble">
                 <div className="message-text" style={{ whiteSpace: 'pre-wrap' }}>
@@ -249,7 +249,7 @@ You can now ask me questions about this document!
           
           {isTyping && (
             <div className="message-modern bot-message-modern">
-              <div className="message-avatar">🤖</div>
+              <div className="message-avatar">AI</div>
               <div className="message-bubble typing-bubble">
                 <div className="typing-indicator-modern">
                   <span className="typing-dot-modern"></span>
@@ -265,7 +265,7 @@ You can now ask me questions about this document!
         <div className="chat-input-container-modern">
           {error && (
             <div className="error-banner">
-              <span className="error-icon">⚠️</span>
+              <span className="error-icon">⚠</span>
               <span>{error}</span>
             </div>
           )}
@@ -278,7 +278,7 @@ You can now ask me questions about this document!
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="chat-input-modern"
-                placeholder="Ask about legal procedures, rights, or get case guidance..."
+                placeholder="Enter your legal query or question..."
                 disabled={isTyping}
               />
               <div className="input-actions">
@@ -295,7 +295,7 @@ You can now ask me questions about this document!
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isTyping}
                 >
-                  📎
+                  ◆
                 </button>
               </div>
             </div>
@@ -305,12 +305,12 @@ You can now ask me questions about this document!
               className="send-button-modern"
               title="Send message"
             >
-              <span className="send-icon">✨</span>
+              <span className="send-icon">→</span>
             </button>
           </div>
           
           <div className="input-hint">
-            Press <kbd>Enter</kbd> to send • <kbd>Shift + Enter</kbd> for new line • <kbd>📎</kbd> to upload documents
+            Press <kbd>Enter</kbd> to send • <kbd>Shift + Enter</kbd> for new line
           </div>
         </div>
       </div>

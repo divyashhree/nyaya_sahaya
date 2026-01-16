@@ -3,8 +3,8 @@
 .summariser-wrapper {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(180deg, #1e1e2e 0%, #667eea 100%);
-  font-family: 'Montserrat', sans-serif;
+  background: linear-gradient(135deg, #0f0a1a 0%, #1a1625 100%);
+  font-family: 'Poppins', sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -13,9 +13,11 @@
 }
 
 .summariser-card {
-  background: rgba(255,255,255,0.97);
+  background: rgba(26, 22, 37, 0.7);
+  backdrop-filter: blur(20px);
   border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   padding: 2.5rem 2rem;
   max-width: 600px;
   width: 100%;
@@ -28,7 +30,7 @@
 .summariser-title {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #fff 0%, #c084fc 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -44,57 +46,58 @@
 }
 
 .summariser-input {
-  background: #fff;
-  color: #232347;
-  border: 1.5px solid #667eea;
-  border-radius: 10px;
+  background: rgba(45, 36, 56, 0.5);
+  color: #f8fafc;
+  border: 1.5px solid rgba(147, 51, 234, 0.3);
+  border-radius: 12px;
   padding: 1rem;
   font-size: 1rem;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Poppins', sans-serif;
   margin-bottom: 1rem;
   width: 100%;
-  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.10);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  box-shadow: 0 2px 12px rgba(147, 51, 234, 0.10);
+  transition: all 0.3s ease;
 }
 .summariser-input:focus {
-  border-color: #a78bfa;
-  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2), 0 2px 12px rgba(102, 126, 234, 0.18);
+  outline: none;
+  border-color: #9333ea;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1), 0 2px 12px rgba(147, 51, 234, 0.18);
 }
 
 .summariser-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
   color: #fff;
   border: none;
   border-radius: 12px;
   padding: 0.75rem 2rem;
   font-weight: 700;
   font-size: 1.05rem;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
   transition: all 0.3s ease;
-  cursor: poPoppins;
+  cursor: pointer;
   margin-bottom: 1.5rem;
 }
 .summariser-btn:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
   transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 15px 40px rgba(147, 51, 234, 0.5);
 }
 
 .summariser-summary {
-  background: #f3f4f6;
-  color: #232347;
-  border-radius: 10px;
+  background: rgba(51, 65, 85, 0.5);
+  color: #f8fafc;
+  border-radius: 12px;
   padding: 1.5rem;
   margin-top: 1.5rem;
   font-size: 1.1rem;
   line-height: 1.7;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   white-space: pre-line;
 }
 
 .summariser-loading {
   text-align: center;
-  color: #667eea;
+  color: #c084fc;
   font-weight: 600;
   margin-top: 1.5rem;
 }

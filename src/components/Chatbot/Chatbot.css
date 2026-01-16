@@ -2,14 +2,16 @@
 .chatbot-modern-container {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  background: linear-gradient(135deg, #0f0a1a 0%, #1a1625 100%);
+  padding: 2rem;
+  padding-bottom: 4rem;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
+  margin-top: 0;
 }
 
 /* Background Glow Effect */
@@ -36,8 +38,9 @@
   position: relative;
   width: 100%;
   max-width: 900px;
-  height: 85vh;
+  height: calc(100vh - 180px);
   max-height: 800px;
+  min-height: 600px;
   background: rgba(255, 255, 255, 0.98);
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -45,11 +48,12 @@
   flex-direction: column;
   overflow: hidden;
   z-index: 1;
+  margin: 0 auto;
 }
 
 /* Header */
 .chat-header-modern {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
   color: white;
   padding: 20px 25px;
   display: flex;
@@ -74,7 +78,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.avatar-icon {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.5px;
 }
 
 .status-indicator {
@@ -237,10 +249,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 13px;
+  font-weight: 700;
   flex-shrink: 0;
-  background: white;
+  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+  color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.5px;
+}
+
+.user-message-modern .message-avatar {
+  background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
 }
 
 .message-bubble {
@@ -258,7 +277,7 @@
 }
 
 .user-message-modern .message-bubble {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
   color: white;
 }
 
@@ -344,16 +363,17 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  background: #f3f4f6;
+  background: #ffffff;
   border-radius: 12px;
   padding: 4px 4px 4px 16px;
-  border: 2px solid transparent;
+  border: 2px solid #e5e7eb;
   transition: all 0.3s ease;
 }
 
 .input-field-wrapper:focus-within {
-  border-color: #667eea;
-  background: transparent;
+  border-color: #9333ea;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
 }
 
 .chat-input-modern {
@@ -364,6 +384,7 @@
   font-size: 15px;
   padding: 12px 0;
   color: #1f2937;
+  font-family: inherit;
 }
 
 .chat-input-modern::placeholder {
@@ -400,13 +421,13 @@
 }
 
 .send-button-modern {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
   color: white;
   border: none;
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  cursor: poPoppins;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -416,7 +437,7 @@
 
 .send-button-modern:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4);
 }
 
 .send-button-modern:disabled {
@@ -442,15 +463,30 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 968px) {
   .chatbot-modern-container {
-    padding: 10px;
+    padding: 1rem;
+    min-height: calc(100vh - 80px);
   }
 
   .chat-window-modern {
-    height: 95vh;
+    height: calc(100vh - 140px);
     max-height: none;
     border-radius: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chatbot-modern-container {
+    padding: 0.5rem;
+    padding-bottom: 2rem;
+  }
+
+  .chat-window-modern {
+    height: calc(100vh - 120px);
+    max-height: none;
+    border-radius: 15px;
+    min-height: 500px;
   }
 
   .chat-header-modern {
@@ -474,6 +510,11 @@
   .header-info {
     display: none;
   }
+
+  .chat-window-modern {
+    height: calc(100vh - 100px);
+  }
+}
 
   .message-text {
     font-size: 14px;

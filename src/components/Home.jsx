@@ -3,87 +3,82 @@ import { Link } from 'react-router-dom';
 import './Home.css';
 
 const Home = () => {
-  const [activeFeature, setActiveFeature] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
-    const interval = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % 6);
-    }, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const features = [
     {
       title: "AI Case Intelligence",
-      description: "Analyze cases with AI-powered risk assessment, strength scoring, and precedent matching",
-      icon: "🧠",
+      description: "Advanced case analysis with automated risk assessment, strength evaluation, and precedent identification using machine learning algorithms",
+      icon: "AI",
       gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       link: "/case-dashboard"
     },
     {
-      title: "Risk Heatmap",
-      description: "Visual analytics showing legal penalties, financial risks, and urgency levels in real-time",
-      icon: "📊",
+      title: "Risk Assessment Matrix",
+      description: "Comprehensive risk visualization displaying legal penalties, financial implications, and case urgency metrics",
+      icon: "RA",
       gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
       link: "/case-dashboard"
     },
     {
-      title: "Case Strength Analyzer",
-      description: "Get 0-100 scores on case strength with AI-powered weak point detection",
-      icon: "💪",
+      title: "Case Strength Analysis",
+      description: "Quantitative evaluation of case merit with data-driven scoring and vulnerability identification",
+      icon: "CS",
       gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
       link: "/case-dashboard"
     },
     {
-      title: "Precedent Explorer",
-      description: "Find similar cases with AI similarity matching and verdict reasoning",
-      icon: "🔍",
+      title: "Precedent Research",
+      description: "Intelligent case law matching with similarity analysis and automated verdict reasoning extraction",
+      icon: "PR",
       gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
       link: "/case-dashboard"
     },
     {
-      title: "Smart Document Generator",
-      description: "Auto-fill legal documents from plain English with AI assistance",
-      icon: "📝",
+      title: "Document Automation",
+      description: "Automated legal document generation with natural language processing and intelligent template population",
+      icon: "DA",
       gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
       link: "/doc-generator"
     },
     {
-      title: "Legal AI Assistant",
-      description: "Chat with AI trained on Indian legal corpus for instant answers",
-      icon: "💬",
+      title: "Legal Assistant",
+      description: "AI-powered legal consultation system trained on Indian Penal Code and procedural law database",
+      icon: "LA",
       gradient: "linear-gradient(135deg, #30cfd0 0%, #330867 100%)",
       link: "/chatbot"
     }
   ];
 
   const stats = [
-    { number: "10K+", label: "Cases Analyzed", icon: "⚖️" },
-    { number: "95%", label: "Accuracy Rate", icon: "🎯" },
-    { number: "24/7", label: "Available", icon: "🌐" },
-    { number: "<3min", label: "Avg Response", icon: "⚡" }
+    { number: "10K+", label: "Cases Analyzed", icon: "⚖" },
+    { number: "95%", label: "Accuracy Rate", icon: "◉" },
+    { number: "24/7", label: "System Uptime", icon: "●" },
+    { number: "<3min", label: "Response Time", icon: "◆" }
   ];
 
   const howItWorks = [
     {
       step: "01",
-      title: "Upload Your Case",
-      description: "Upload FIR, complaint, or case documents in any format",
-      icon: "📤"
+      title: "Document Upload",
+      description: "Submit FIR, complaints, or legal documents in PDF, DOC, or text format for processing",
+      icon: "↑"
     },
     {
       step: "02",
-      title: "AI Analysis",
-      description: "Our AI extracts key info, identifies risks, and calculates strength",
-      icon: "🤖"
+      title: "Automated Analysis",
+      description: "AI engine extracts key information, identifies risk factors, and calculates case strength metrics",
+      icon: "⟳"
     },
     {
       step: "03",
-      title: "Get Insights",
-      description: "Receive visual analytics, precedents, and actionable recommendations",
-      icon: "💡"
+      title: "Intelligence Report",
+      description: "Access comprehensive analytics, relevant precedents, and data-driven strategic recommendations",
+      icon: "◈"
     }
   ];
 
@@ -99,34 +94,34 @@ const Home = () => {
           <h1 className="hero-title">
             Legal Intelligence
             <br />
-            <span className="gradient-text">Reimagined</span>
+            <span className="gradient-text">Platform</span>
           </h1>
           <p className="hero-subtitle">
-            Transform complex legal cases into clear, data-driven insights with AI-powered 
-            risk analysis, precedent matching, and case strength evaluation
+            Advanced legal analytics platform leveraging artificial intelligence for comprehensive case assessment, 
+            risk quantification, precedent research, and strategic decision support
           </p>
           <div className="hero-cta">
             <Link to="/case-dashboard" className="cta-primary">
-              <span>Start Analysis</span>
+              <span>Begin Case Analysis</span>
               <span className="cta-arrow">→</span>
             </Link>
             <Link to="/chatbot" className="cta-secondary">
-              <span>Try AI Assistant</span>
+              <span>Legal Assistant</span>
             </Link>
           </div>
         </div>
         <div className="hero-visual">
           <div className="floating-card card-1">
-            <div className="card-icon">📊</div>
-            <div className="card-text">Risk: <span className="highlight-green">Low</span></div>
+            <div className="card-icon">◉</div>
+            <div className="card-text">Risk Level: <span className="highlight-green">Low</span></div>
           </div>
           <div className="floating-card card-2">
-            <div className="card-icon">💪</div>
-            <div className="card-text">Strength: <span className="highlight-blue">87%</span></div>
+            <div className="card-icon">▲</div>
+            <div className="card-text">Case Strength: <span className="highlight-blue">87%</span></div>
           </div>
           <div className="floating-card card-3">
-            <div className="card-icon">⚖️</div>
-            <div className="card-text">Precedents: <span className="highlight-purple">12 Found</span></div>
+            <div className="card-icon">⚖</div>
+            <div className="card-text">Precedents: <span className="highlight-purple">12 Matched</span></div>
           </div>
         </div>
       </section>
@@ -147,15 +142,15 @@ const Home = () => {
       {/* FEATURES SECTION */}
       <section className="features-showcase">
         <div className="section-header">
-          <h2 className="section-title">Powerful Features</h2>
-          <p className="section-subtitle">Everything you need for intelligent legal analysis</p>
+          <h2 className="section-title">Core Capabilities</h2>
+          <p className="section-subtitle">Comprehensive suite of AI-powered legal intelligence tools</p>
         </div>
         <div className="features-grid-modern">
           {features.map((feature, index) => (
             <Link 
               to={feature.link}
               key={index} 
-              className={`feature-card-modern ${activeFeature === index ? 'active' : ''}`}
+              className="feature-card-modern"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="feature-gradient" style={{ background: feature.gradient }}></div>
@@ -190,11 +185,11 @@ const Home = () => {
       {/* CTA SECTION */}
       <section className="cta-section">
         <div className="cta-content">
-          <h2 className="cta-title">Ready to Transform Your Legal Workflow?</h2>
-          <p className="cta-text">Join thousands of lawyers and citizens using AI-powered legal intelligence</p>
+          <h2 className="cta-title">Enhance Your Legal Practice with AI</h2>
+          <p className="cta-text">Join legal professionals leveraging artificial intelligence for superior case outcomes</p>
           <Link to="/case-dashboard" className="cta-button-large">
-            <span>Get Started Now</span>
-            <span className="cta-sparkle">✨</span>
+            <span>Access Platform</span>
+            <span className="cta-sparkle">→</span>
           </Link>
         </div>
       </section>

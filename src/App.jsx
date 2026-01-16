@@ -33,15 +33,24 @@ const DocGenerator = () => {
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : true;
+  });
   const location = useLocation();
 
+  useEffect(() => {
+    document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
   const navItems = [
-    { path: '/', label: 'Home', icon: '🏠' },
-    { path: '/case-dashboard', label: 'Case Intelligence', icon: '📊', highlight: true },
-    { path: '/chatbot', label: 'AI Assistant', icon: '💬' },
-    { path: '/doc-generator', label: 'Doc Generator', icon: '📝' },
-    { path: '/doc-summariser', label: 'Summarizer', icon: '📄' },
-    { path: '/about', label: 'About', icon: 'ℹ️' }
+    { path: '/', label: 'Home', icon: 'HOME' },
+    { path: '/case-dashboard', label: 'Case Intelligence', icon: 'CASE', highlight: true },
+    { path: '/chatbot', label: 'AI Assistant', icon: 'AI' },
+    { path: '/doc-generator', label: 'Generator', icon: 'GEN' },
+    { path: '/doc-summariser', label: 'Summarizer', icon: 'SUM' },
+    { path: '/about', label: 'About', icon: 'INFO' }
   ];
 
   return (
@@ -49,21 +58,21 @@ const Navbar = () => {
       <div className="navbar-container">
         <div className="navbar-brand">
           <Link to="/" className="brand-link">
-            <span className="brand-icon">⚖️</span>
+            <span className="brand-icon">⚖</span>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="brand-text">
                 Nyaya<span className="brand-highlight">Sahaya</span>
               </span>
             </div>
           </Link>
-          <span className="brand-tagline">AI LEGAL INTELLIGENCE</span>
+          <span className="brand-tagline">LEGAL INTELLIGENCE</span>
         </div>
 
         <button 
           className="mobile-menu-toggle"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
-          {isMobileMenuOpen ? '✕' : '☰'}
+          {isMobileMenuOpen ? '×' : '≡'}
         </button>
 
         <ul className={`nav-menu ${isMobileMenuOpen ? 'active' : ''}`}>
@@ -79,6 +88,15 @@ const Navbar = () => {
               </Link>
             </li>
           ))}
+          <li className="nav-item">
+            <button 
+              className="theme-toggle"
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {darkMode ? '☀️' : '🌙'}
+            </button>
+          </li>
         </ul>
       </div>
     </nav>
