@@ -7,6 +7,27 @@ const DocSummariser = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Format markdown text to JSX
+  const formatMarkdown = (text) => {
+    if (!text) return null;
+    
+    // Split by lines
+    const lines = text.split('\n');
+    
+    return lines.map((line, idx) => {
+      // Handle bold text **text**
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+      const formatted = parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      });
+      
+      return <div key={idx}>{formatted}</div>;
+    });
+  };
+
   // Connect to backend API for PDF summarisation
   const handleSummarise = async () => {
     if (!file) {
@@ -20,7 +41,7 @@ const DocSummariser = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch('http://localhost:8000/api/summarise-pdf', {
+      const response = await fetch('http://localhost:8001/api/summarise-pdf', {
         method: 'POST',
         body: formData,
       });
@@ -65,7 +86,7 @@ const DocSummariser = () => {
         {loading && !error && <div className="summariser-loading">Analysing legal document...</div>}
         {summary && (
           <div className="summariser-summary">
-            {summary}
+            {formatMarkdown(summary)}
           </div>
         )}
       </div>

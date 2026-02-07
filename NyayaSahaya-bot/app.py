@@ -8,6 +8,14 @@ import re
 import PyPDF2
 import io
 import json
+try:
+    from pdf2image import convert_from_bytes
+    import pytesseract
+    from PIL import Image
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    print("[WARNING] OCR not available. Install: pip install pdf2image pytesseract Pillow")
 
 load_dotenv()
 
@@ -21,13 +29,30 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-# Ollama configuration
+# LLM Configuration - supports both Ollama (local) and Groq (cloud)
+USE_GROQ = os.getenv("USE_GROQ", "false").lower() == "true"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")  # Changed to mistral
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 
-print(f"🚀 Starting NyayaSahaya API")
-print(f"📡 Ollama URL: {OLLAMA_URL}")
-print(f"🤖 Ollama Model: {OLLAMA_MODEL}")
+if USE_GROQ and GROQ_API_KEY:
+    try:
+        from groq import Groq
+        groq_client = Groq(api_key=GROQ_API_KEY)
+        print(f"[*] Starting NyayaSahaya API")
+        print(f"[GROQ] Using Groq Cloud (FAST mode)")
+        print(f"[GROQ] Model: llama-3.1-8b-instant")
+    except ImportError:
+        print("[WARNING] Groq not installed, falling back to Ollama")
+        print("Run: pip install groq")
+        USE_GROQ = False
+        print(f"[*] Starting NyayaSahaya API")
+        print(f"[OLLAMA] Ollama URL: {OLLAMA_URL}")
+        print(f"[OLLAMA] Ollama Model: {OLLAMA_MODEL}")
+else:
+    print(f"[*] Starting NyayaSahaya API")
+    print(f"[OLLAMA] Ollama URL: {OLLAMA_URL}")
+    print(f"[OLLAMA] Ollama Model: {OLLAMA_MODEL}")
 
 # In-memory conversation history
 conversations = {}
@@ -126,6 +151,71 @@ def get_default_responses():
     }
 
 
+def call_llm(prompt, system_prompt=None, conversation_id="default", expect_json=False):
+    """Universal LLM caller - uses Groq if enabled, otherwise Ollama"""
+    if USE_GROQ and GROQ_API_KEY:
+        return call_groq(prompt, system_prompt, conversation_id, expect_json)
+    else:
+        return call_ollama(prompt, system_prompt, conversation_id, expect_json)
+
+
+def call_groq(prompt, system_prompt=None, conversation_id="default", expect_json=False):
+    """Call Groq API - SUPER FAST cloud inference"""
+    if conversation_id not in conversations:
+        conversations[conversation_id] = []
+    
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    
+    if not expect_json:
+        messages.extend(conversations[conversation_id])
+    
+    messages.append({"role": "user", "content": prompt})
+    
+    print(f"\n[DEBUG] Calling Groq Cloud...")
+    print(f"[DEBUG] Model: llama-3.1-8b-instant")
+    print(f"[DEBUG] Prompt length: {len(prompt)} chars")
+    
+    try:
+        # Build request params - DON'T use response_format as it breaks analysis
+        request_params = {
+            "model": "llama-3.1-8b-instant",
+            "messages": messages,
+            "temperature": 0.3 if expect_json else 0.7,
+            "max_tokens": 1024,  # Increased for better responses
+            "top_p": 0.9
+        }
+        
+        # NOTE: response_format json_object causes Groq to return null/empty values
+        # Better to let it respond naturally and parse JSON from the response
+        
+        response = groq_client.chat.completions.create(**request_params)
+        
+        assistant_message = response.choices[0].message.content
+        print(f"[DEBUG] Groq response: {len(assistant_message)} chars")
+        print(f"[DEBUG] Response preview: {assistant_message[:300]}...")  # Show first 300 chars
+        
+        if not expect_json:
+            conversations[conversation_id].append({"role": "user", "content": prompt})
+            conversations[conversation_id].append({"role": "assistant", "content": assistant_message})
+            
+            if len(conversations[conversation_id]) > 2:
+                conversations[conversation_id] = conversations[conversation_id][-2:]
+        
+        if expect_json:
+            parsed = extract_json_from_response(assistant_message)
+            if parsed:
+                return parsed
+        
+        return assistant_message
+        
+    except Exception as e:
+        print(f"[DEBUG] ERROR - Groq error: {e}")
+        print(f"[DEBUG] Falling back to Ollama...")
+        return call_ollama(prompt, system_prompt, conversation_id, expect_json)
+
+
 def call_ollama(prompt, system_prompt=None, conversation_id="default", expect_json=False):
     """Call Ollama API with optimized settings for long documents"""
     
@@ -141,27 +231,31 @@ def call_ollama(prompt, system_prompt=None, conversation_id="default", expect_js
     
     messages.append({"role": "user", "content": prompt})
     
-    print(f"\n[DEBUG] 📤 Calling Ollama...")
+    print(f"\n[DEBUG] Calling Ollama...")
     print(f"[DEBUG] Model: {OLLAMA_MODEL}")
     print(f"[DEBUG] Expect JSON: {expect_json}")
     print(f"[DEBUG] Prompt length: {len(prompt)} chars")
     
     try:
+        payload = {
+            "model": OLLAMA_MODEL,
+            "messages": messages,
+            "stream": False,
+            "options": {
+                "temperature": 0.3 if expect_json else 0.7,
+                "num_predict": 256,       # Fast responses for demo
+                "num_ctx": 2048,          # Reduced context for speed
+                "top_p": 0.9,
+                "repeat_penalty": 1.1
+            }
+        }
+        # Don't use format: json as mistral doesn't support it well
+        # if expect_json:
+        #     payload["format"] = "json"
+        
         response = requests.post(
             f"{OLLAMA_URL}/api/chat",
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": messages,
-                "stream": False,
-                "format": "json" if expect_json else None,
-                "options": {
-                    "temperature": 0.3 if expect_json else 0.7,
-                    "num_predict": 2048,      # Allow longer responses
-                    "num_ctx": 16384,         # Large context window for long docs
-                    "top_p": 0.9,
-                    "repeat_penalty": 1.1
-                }
-            },
+            json=payload,
             timeout=300  # 5 minutes timeout
         )
         
@@ -178,8 +272,8 @@ def call_ollama(prompt, system_prompt=None, conversation_id="default", expect_js
                 conversations[conversation_id].append({"role": "user", "content": prompt})
                 conversations[conversation_id].append({"role": "assistant", "content": assistant_message})
                 
-                if len(conversations[conversation_id]) > 6:
-                    conversations[conversation_id] = conversations[conversation_id][-6:]
+                if len(conversations[conversation_id]) > 2:
+                    conversations[conversation_id] = conversations[conversation_id][-2:]
             
             if expect_json:
                 parsed = extract_json_from_response(assistant_message)
@@ -222,7 +316,7 @@ async def chat(request: Request):
         if not question:
             return JSONResponse({"error": "Question is required"}, status_code=400)
 
-        answer = call_ollama(question, LEGAL_SYSTEM_PROMPT, session_id, expect_json=False)
+        answer = call_llm(question, LEGAL_SYSTEM_PROMPT, session_id, expect_json=False)
         
         if not answer:
             return {"answer": "I'm having trouble connecting. Please ensure Ollama is running with 'ollama serve'."}
@@ -248,66 +342,41 @@ async def analyze_case(request: Request):
         if not case_text:
             return JSONResponse({"error": "Case text is required"}, status_code=400)
         
-        # Enhanced detailed analysis prompt
-        analysis_prompt = f"""You are a senior legal analyst. Perform a comprehensive analysis of this legal document.
+        # Ultra-simple prompt - ask questions directly
+        analysis_prompt = f"""Read this legal document:
 
-FULL LEGAL DOCUMENT:
-{case_text}
+{case_text[:4000]}
 
-Provide detailed analysis in this JSON format:
-{{
-    "case_type": "Criminal/Civil/Property/Family/Constitutional/Consumer",
-    "sub_category": "Specific type like Contract Dispute, Cheating, Property Transfer",
-    "jurisdiction": "Specify exact court - District Court/High Court/Supreme Court and state",
-    "court_location": "City or district name",
-    "sections": ["List ALL applicable sections with full names - e.g., IPC Section 420, Contract Act 1872 Section 73"],
-    "complexity_score": 75,
-    "urgency_level": "Critical/High/Medium/Low",
-    "estimated_duration": "Estimated time to resolution",
-    "parties": {{
-        "petitioner": "Full name and designation",
-        "petitioner_type": "Individual/Company/Government",
-        "respondent": "Full name and designation",
-        "respondent_type": "Individual/Company/Government",
-        "other_parties": ["List any other involved parties"]
-    }},
-    "case_summary": "Comprehensive 3-4 sentence summary of the entire case",
-    "key_facts": [
-        "Detailed fact 1 with dates and specifics",
-        "Detailed fact 2 with amounts and parties",
-        "Detailed fact 3 with legal implications",
-        "Include 5-7 comprehensive facts"
-    ],
-    "legal_issues": [
-        "Primary legal issue with statutory reference",
-        "Secondary legal issue with case law implications",
-        "Constitutional or procedural issues if any"
-    ],
-    "claimed_amount": "Amount in dispute if applicable",
-    "cause_of_action": "When and how the legal cause arose",
-    "jurisdiction_basis": "Why this court has jurisdiction",
-    "previous_proceedings": "Any prior legal action mentioned",
-    "statute_of_limitations": "Time limitation concerns if any",
-    "key_dates": {{
-        "incident_date": "Date of main incident",
-        "filing_date": "When case was filed",
-        "first_hearing": "Scheduled or expected date"
-    }}
-}}
+Answer these questions about the document above:
+1. What type of case is this? (Civil/Criminal/Property/Contract)
+2. Which court has jurisdiction?
+3. Who is the petitioner/plaintiff?
+4. Who is the respondent/defendant?
+5. What legal sections are mentioned?
+6. What is this case about in 1-2 sentences?
+7. List 3 key facts from the document.
 
-Be thorough and extract every relevant detail from the document."""
+Format your answer ONLY as JSON:
+{{"case_type": "answer1", "jurisdiction": "answer2", "parties": {{"petitioner": "answer3", "respondent": "answer4"}}, "sections": ["answer5"], "case_summary": "answer6", "key_facts": ["fact1", "fact2", "fact3"], "complexity_score": 65}}"""
         
-        answer = call_ollama(analysis_prompt, expect_json=True)
+        answer = call_llm(analysis_prompt, expect_json=True)
+        
+        print(f"[ANALYZE] Answer type: {type(answer)}")
+        print(f"[ANALYZE] Answer value: {str(answer)[:500]}")
         
         if isinstance(answer, dict):
-            print(f"[ANALYZE] ✅ Detailed analysis complete")
+            print(f"[ANALYZE] SUCCESS - Returning parsed dict")
             return {"analysis": answer}
         
         parsed = extract_json_from_response(str(answer)) if answer else None
+        print(f"[ANALYZE] Parsed result: {parsed}")
+        
         if parsed:
+            print(f"[ANALYZE] SUCCESS - Returning parsed JSON")
             return {"analysis": parsed}
         
         # Enhanced fallback with more detail
+        print(f"[ANALYZE] WARNING - USING FALLBACK DATA - Groq failed or returned invalid JSON")
         return {"analysis": {
             "case_type": "Civil",
             "sub_category": "Contract Dispute - Payment Default",
@@ -364,60 +433,29 @@ async def calculate_risk(request: Request):
         
         print(f"\n[RISK] Comprehensive risk analysis...")
         
-        risk_prompt = f"""As a legal risk analyst, provide detailed risk assessment:
+        risk_prompt = f"""Analyze the legal risk for this case. Return ONLY valid JSON with actual assessment, not placeholder values.
 
-CASE DETAILS:
-Case Type: {case_details.get('case_type', 'Unknown')}
-Sub-Category: {case_details.get('sub_category', 'Not specified')}
-Legal Sections: {', '.join(case_details.get('sections', []))}
-Facts: {'; '.join(case_details.get('key_facts', [])[:3])}
-Parties: {case_details.get('parties', {}).get('petitioner', 'Unknown')} vs {case_details.get('parties', {}).get('respondent', 'Unknown')}
-Evidence Count: {len(evidence)}
+Case Type: {case_details.get('case_type', 'case')}
+Case Summary: {case_details.get('case_summary', 'N/A')}
 
-Provide comprehensive risk analysis in JSON:
+Provide real risk analysis in JSON format with these EXACT field names:
 {{
-  "overall_risk": "Critical/High/Medium/Low",
-  "risk_score": 75,
-  "legal_penalty_probability": 65,
-  "financial_risk": 70,
-  "reputational_risk": 60,
-  "urgency_level": 85,
-  "risk_factors": [
-    {{
-      "factor": "Lack of documented evidence",
-      "severity": "High",
-      "impact": "Could weaken case substantially",
-      "mitigation": "Gather supporting documents immediately"
-    }},
-    {{
-      "factor": "Statute of limitations concern",
-      "severity": "Medium",
-      "impact": "May affect claim validity",
-      "mitigation": "Verify dates and file promptly"
-    }}
-  ],
-  "potential_penalties": {{
-    "criminal": "Details if criminal case",
-    "civil": "Monetary damages, costs, interest",
-    "administrative": "Any regulatory penalties"
-  }},
-  "financial_exposure": {{
-    "minimum": "Lower estimate",
-    "maximum": "Upper estimate",
-    "legal_costs": "Estimated litigation costs"
-  }},
-  "timeline_risk": "Risk of delays or prolonged litigation",
-  "risk_explanation": "Detailed 4-5 sentence analysis explaining all risk factors, their interconnections, and overall case exposure. Include specific legal considerations and precedent implications.",
-  "recommendations": [
-    "Immediate action item 1 with specific steps",
-    "Strategic recommendation 2 for risk mitigation",
-    "Long-term consideration 3 for case management"
-  ]
+  "overall_risk": "High/Medium/Low (choose one based on analysis)",
+  "legal_penalty_probability": 75,
+  "financial_risk": 60,
+  "urgency_level": 80,
+  "risk_factors": [["specific factor 1", "severity level"], ["specific factor 2", "severity level"]],
+  "risk_explanation": "actual analysis of risks",
+  "recommendations": ["specific actionable recommendation 1", "specific actionable recommendation 2"]
 }}
 
-Provide thorough, professional analysis."""
+IMPORTANT: 
+- legal_penalty_probability should be 0-100 representing likelihood of legal penalties
+- financial_risk should be 0-100 representing potential financial impact
+- urgency_level should be 0-100 representing how urgent action is needed
+- Analyze the actual case and provide realistic numbers, not generic values"""
         
-        answer = call_ollama(risk_prompt, expect_json=True)
+        answer = call_llm(risk_prompt, expect_json=True)
         
         if isinstance(answer, dict):
             return {"risk_analysis": answer}
@@ -443,108 +481,30 @@ async def calculate_case_strength(request: Request):
         
         print(f"\n[STRENGTH] Detailed strength analysis...")
         
-        strength_prompt = f"""As a legal strategy consultant, analyze case strength comprehensively:
+        strength_prompt = f"""Analyze case strength. Return ONLY valid JSON with real analysis, not placeholder values.
 
-CASE INFORMATION:
-Type: {case_info.get('case_type', 'Unknown')}
-Sections: {', '.join(case_info.get('sections', []))}
-Key Facts: {len(case_info.get('key_facts', []))} facts documented
-Evidence: {len(evidence_list)} items available
+Case Type: {case_info.get('case_type', 'case')}
+Key Facts: {case_info.get('key_facts', [])}
+Case Summary: {case_info.get('case_summary', 'N/A')}
 
-Provide detailed JSON analysis:
+Provide actual strength analysis in JSON format with these EXACT field names:
 {{
-  "strength_score": 68,
-  "confidence_level": "High/Medium/Low",
+  "overall_strength": "Strong/Moderate/Weak (choose based on ACTUAL analysis)",
+  "strength_score": 72,
   "win_probability": 65,
-  "settlement_probability": 75,
-  "strengths": [
-    {{
-      "aspect": "Strong documentary evidence",
-      "description": "Written agreements and correspondence establish clear contractual relationship",
-      "legal_weight": "High",
-      "supports": "Primary claim of breach of contract"
-    }},
-    {{
-      "aspect": "Clear timeline of events",
-      "description": "Well-documented sequence showing performance and default",
-      "legal_weight": "Medium-High",
-      "supports": "Cause of action and damages calculation"
-    }},
-    {{
-      "aspect": "Applicable precedents",
-      "description": "Established case law supports similar contract disputes",
-      "legal_weight": "Medium",
-      "supports": "Legal interpretation and remedies"
-    }}
-  ],
-  "weaknesses": [
-    {{
-      "aspect": "Incomplete documentation",
-      "description": "Missing key correspondence or payment receipts",
-      "legal_impact": "Medium",
-      "how_to_address": "Request through discovery process"
-    }},
-    {{
-      "aspect": "Potential counterclaims",
-      "description": "Defendant may raise service quality issues",
-      "legal_impact": "Low-Medium",
-      "how_to_address": "Prepare rebuttal evidence"
-    }}
-  ],
-  "critical_evidence": [
-    "Original signed agreement",
-    "Service delivery proof/acceptance",
-    "Payment demand notices",
-    "All correspondence chain"
-  ],
-  "missing_evidence": [
-    {{
-      "item": "Payment receipts for partial payments",
-      "importance": "High",
-      "how_to_obtain": "Bank statements or accounting records"
-    }},
-    {{
-      "item": "Expert testimony on service quality",
-      "importance": "Medium",
-      "how_to_obtain": "Engage technical expert witness"
-    }}
-  ],
-  "legal_arguments": [
-    "Primary: Breach of contract under Indian Contract Act 1872",
-    "Secondary: Quantum meruit for services rendered",
-    "Alternative: Unjust enrichment principles"
-  ],
-  "opponent_arguments": [
-    "Possible defense: Service quality issues",
-    "Possible defense: Force majeure or financial hardship",
-    "Counter-strategy: Documented acceptance and approval required"
-  ],
-  "recommendations": [
-    {{
-      "priority": "High",
-      "action": "Consolidate all documentary evidence",
-      "timeline": "Within 2 weeks",
-      "reason": "Strengthens primary claim"
-    }},
-    {{
-      "priority": "Medium",
-      "action": "Prepare expert witness testimony",
-      "timeline": "Before trial",
-      "reason": "Counters quality objections"
-    }},
-    {{
-      "priority": "High",
-      "action": "Explore settlement negotiation",
-      "timeline": "Pre-trial stage",
-      "reason": "High settlement probability suggests cost-effective resolution"
-    }}
-  ],
-  "case_theory": "Clear 2-3 sentence explanation of the winning legal theory and strategy"
+  "strengths": ["specific strength 1 from this case", "specific strength 2 from this case", "specific strength 3 from this case"],
+  "weaknesses": ["specific weakness 1 from this case", "specific weakness 2 from this case"],
+  "recommendations": ["specific action 1 to strengthen this case", "specific action 2 to strengthen this case"]
 }}
 
-Provide thorough professional analysis."""
+IMPORTANT:
+- strength_score should be 0-100 based on ACTUAL case analysis, not a generic number
+- win_probability should be 0-100 based on analyzing the strengths vs weaknesses (higher score means better chance of winning)
+- Analyze the specific facts and circumstances to determine if case is strong (70-100), moderate (40-69), or weak (0-39)
+- Provide case-specific strengths and weaknesses, not generic legal advice
+- Field names must be strengths and weaknesses (plural)"""
         
-        answer = call_ollama(strength_prompt, expect_json=True)
+        answer = call_llm(strength_prompt, expect_json=True)
         
         if isinstance(answer, dict):
             return {"strength_analysis": answer}
@@ -630,25 +590,32 @@ async def find_precedents(request: Request):
         
         print(f"\n[PRECEDENTS] Finding for {case_type}...")
         
-        precedent_prompt = f"""Find 3 relevant Indian legal precedents for this case:
+        precedent_prompt = f"""Return ONLY a valid JSON array of 2-3 ACTUAL Indian legal precedents. No explanatory text, no placeholder values.
 
 Case Type: {case_type}
-Description: {case_description}
+Case Description: {case_description}
 
-Return ONLY a JSON array:
-[
-  {{
-    "title": "Party A vs Party B",
-    "citation": "2023 SCC 145",
-    "similarity": 85,
-    "verdict": "Verdict summary",
-    "reasoning": "Brief court reasoning",
-    "relevance": "How it applies to current case",
-    "keyTakeaway": "Main lesson from this precedent"
-  }}
-]"""
+Find real Indian Supreme Court or High Court precedents that are relevant to this specific case type.
+
+JSON array structure with these EXACT field names:
+[{{
+  "title": "Actual Case Name vs Other Party Name",
+  "citation": "AIR 2018 SC 1234 or similar Indian citation",
+  "verdict": "Brief summary of what the court ruled",
+  "reasoning": "Key legal reasoning the court used in making this decision",
+  "relevance": "Explain why this precedent is relevant to the current case",
+  "keyTakeaway": "Main legal principle established by this case",
+  "similarity": 85
+}}]
+
+IMPORTANT:
+- Use REAL Indian case law precedents from Supreme Court or High Court
+- similarity should be 0-100 showing how similar this precedent is to current case
+- verdict should describe what the court decided
+- reasoning should explain the court legal logic
+- All fields must have actual content not N/A or placeholders"""
         
-        answer = call_ollama(precedent_prompt, expect_json=True)
+        answer = call_llm(precedent_prompt, expect_json=True)
         
         if isinstance(answer, list):
             return {"precedents": answer}
@@ -675,26 +642,20 @@ async def generate_timeline(request: Request):
         
         print(f"\n[TIMELINE] Generating for {case_type}...")
         
-        timeline_prompt = f"""Generate realistic Indian court timeline:
+        timeline_prompt = f"""Return ONLY a valid JSON array. No explanatory text.
 
-Case Type: {case_type}
-Jurisdiction: {jurisdiction}
-Filing Date: {filing_date}
+Generate timeline for: {case_type} in {jurisdiction}
+Filing date: {filing_date}
 
-Return ONLY a JSON array with 5-7 stages:
-[
-  {{
-    "stage": "Stage name",
-    "date": "2024-01-15",
-    "status": "Completed or Pending or Upcoming",
-    "description": "Brief description",
-    "expected_duration": "Duration estimate"
-  }}
-]
-
-Include: FIR/Filing, Investigation, Chargesheet, First Hearing, Trial, Arguments, Judgment."""
+JSON array of 4-5 stages:
+[{{
+  "stage": "string",
+  "date": "YYYY-MM-DD",
+  "status": "Completed/Upcoming",
+  "description": "string"
+}}]"""
         
-        answer = call_ollama(timeline_prompt, expect_json=True)
+        answer = call_llm(timeline_prompt, expect_json=True)
         
         if isinstance(answer, list):
             return {"timeline": answer}
@@ -708,6 +669,93 @@ Include: FIR/Filing, Investigation, Chargesheet, First Hearing, Trial, Arguments
     except Exception as e:
         print(f"[ERROR] generate_timeline: {e}")
         return {"timeline": get_default_responses()["timeline"]}
+
+
+@app.post("/api/summarise-pdf")
+async def summarise_pdf(file: UploadFile = File(...)):
+    """Summarise a PDF document"""
+    try:
+        content = await file.read()
+        pdf_file = io.BytesIO(content)
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        
+        text = ""
+        for page in pdf_reader.pages[:10]:  # First 10 pages
+            text += page.extract_text() + "\n"
+        
+        # If no text extracted, try OCR
+        if not text.strip() and OCR_AVAILABLE:
+            print("[PDF] No text found, trying OCR...")
+            try:
+                images = convert_from_bytes(content, first_page=1, last_page=10)
+                for i, image in enumerate(images):
+                    print(f"[OCR] Processing page {i+1}...")
+                    text += pytesseract.image_to_string(image) + "\n"
+            except Exception as ocr_error:
+                print(f"[OCR ERROR] {ocr_error}")
+                return {"summary": f"⚠️ This appears to be a scanned/image-based PDF.\n\nTo process scanned PDFs, Tesseract OCR must be installed:\n1. Download from: https://github.com/UB-Mannheim/tesseract/wiki\n2. Install to default location\n3. Restart the backend\n\nFor now, please use a text-based PDF or manually copy the text."}
+        
+        if not text.strip():
+            if OCR_AVAILABLE:
+                return {"summary": "⚠️ Unable to extract text from this PDF.\n\nPossible causes:\n• PDF is encrypted\n• PDF is image-based without selectable text\n• PDF uses unsupported encoding\n\nTry:\n• Using a different PDF file\n• Converting the PDF to text format first\n• Manually copying the text"}
+            else:
+                return {"summary": "⚠️ Unable to extract text from this PDF.\n\nThis appears to be a scanned/image PDF. OCR libraries are not installed.\n\nInstall OCR support: pip install pdf2image pytesseract Pillow\nThen install Tesseract: https://github.com/UB-Mannheim/tesseract/wiki"}
+        
+        prompt = f"""Summarize this legal document concisely in 3-4 paragraphs:
+
+{text[:3000]}
+
+Provide: 1) Document type, 2) Key parties, 3) Main terms/provisions, 4) Important dates/amounts"""
+        
+        summary = call_llm(prompt, expect_json=False)
+        
+        return {"summary": summary or "Unable to generate summary"}
+        
+    except Exception as e:
+        print(f"[ERROR] summarise_pdf: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/extract-pdf-text")
+async def extract_pdf_text(file: UploadFile = File(...)):
+    """Extract raw text from PDF for case analysis"""
+    try:
+        print(f"\n[PDF] Extracting text from: {file.filename}")
+        content = await file.read()
+        pdf_file = io.BytesIO(content)
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        
+        text = ""
+        for page in pdf_reader.pages:  # All pages
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+        
+        # If no text extracted, try OCR
+        if not text.strip() and OCR_AVAILABLE:
+            print("[PDF] No text found, trying OCR on all pages...")
+            try:
+                images = convert_from_bytes(content)
+                for i, image in enumerate(images):
+                    print(f"[OCR] Processing page {i+1}/{len(images)}...")
+                    text += pytesseract.image_to_string(image) + "\n"
+            except Exception as ocr_error:
+                print(f"[OCR ERROR] {ocr_error}")
+                return JSONResponse({"error": "⚠️ This appears to be a scanned/image-based PDF. Tesseract OCR must be installed. Download from: https://github.com/UB-Mannheim/tesseract/wiki"}, status_code=400)
+        
+        print(f"[PDF] Extracted {len(text)} characters from {len(pdf_reader.pages)} pages")
+        
+        if not text.strip():
+            if OCR_AVAILABLE:
+                return JSONResponse({"error": "⚠️ Unable to extract text. PDF may be encrypted or uses unsupported encoding. Try a different PDF or manually copy the text."}, status_code=400)
+            else:
+                return JSONResponse({"error": "⚠️ This appears to be a scanned PDF. Install OCR: pip install pdf2image pytesseract Pillow, then Tesseract OCR."}, status_code=400)
+        
+        return {"text": text}
+        
+    except Exception as e:
+        print(f"[ERROR] extract_pdf_text: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.post("/api/upload-evidence")
@@ -744,7 +792,7 @@ Return ONLY valid JSON:
   "summary": "2-3 sentence summary"
 }}"""
         
-        answer = call_ollama(evidence_prompt, expect_json=True)
+        answer = call_llm(evidence_prompt, expect_json=True)
         analysis = answer if isinstance(answer, dict) else extract_json_from_response(str(answer))
         
         if not analysis:

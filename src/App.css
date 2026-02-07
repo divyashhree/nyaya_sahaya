@@ -1,17 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
 :root {
-  --primary: #9333ea;
-  --primary-dark: #7e22ce;
-  --primary-light: #a855f7;
+  --primary: #667eea;
+  --primary-dark: #764ba2;
+  --primary-light: #8b7ad6;
   --accent: #f59e0b;
   --accent-light: #fbbf24;
   --success: #10b981;
   --warning: #f59e0b;
-  --background: #0f0a1a;
-  --surface: #1a1625;
+  --background: #667eea;
+  --surface: rgba(255, 255, 255, 0.95);
   --surface-light: #2d2438;
-  --text-primary: #f8fafc;
-  --text-secondary: #a1a1aa;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
   --border: rgba(168, 85, 247, 0.15);
   --glow: rgba(147, 51, 234, 0.4);
 }
@@ -60,7 +60,7 @@ body {
 
 /* ==================== NAVBAR ==================== */
 .navbar {
-  background: rgba(26, 22, 37, 0.95);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid rgba(168, 85, 247, 0.15);
   position: sticky;
@@ -233,7 +233,7 @@ body {
 }
 
 .container {
-  background: rgba(26, 22, 37, 0.7);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
   border-radius: 24px;
   padding: 2.5rem;

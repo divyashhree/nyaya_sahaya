@@ -15,10 +15,14 @@ sentence-transformers
 
 # LLM provider
 together
+groq
 
 # File handling
 pypdf
 python-multipart
+pdf2image
+pytesseract
+Pillow
 
 # Utilities
 requests

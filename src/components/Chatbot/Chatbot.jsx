@@ -13,7 +13,7 @@ function Chatbot() {
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const BASE_URL = "http://localhost:8000";
+  const BASE_URL = "http://localhost:8001";
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });

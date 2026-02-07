@@ -1,15 +1,15 @@
 .aboutus-container {
   padding: 4rem 2rem;
   font-family: 'Poppins', sans-serif;
-  background: linear-gradient(135deg, #0f0a1a 0%, #1a1625 100%);
-  color: #f8fafc;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  color: #1f2937;
   min-height: 100vh;
 }
 
 h1, h2 {
   font-size: 2.5rem;
   font-family: 'Montserrat', sans-serif;
-  background: linear-gradient(135deg, #fff, #c084fc);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -19,24 +19,24 @@ h1, h2 {
 
 .aboutus-hero-text {
   font-size: 1.5rem;
-  color: #c084fc;
+  color: #667eea;
   font-weight: bold;
 }
 
 .aboutus-hero-description {
   margin-top: 10px;
   font-size: 1rem;
-  color: #94a3b8;
+  color: #4b5563;
 }
 
 .team-section {
-  background: rgba(26, 22, 37, 0.7);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   padding: 3rem 2rem;
   margin-top: 3rem;
   border-radius: 20px;
-  border: 1px solid rgba(168, 85, 247, 0.15);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
 .team-grid {
@@ -98,7 +98,7 @@ h1, h2 {
 
 label {
   font-size: 1rem;
-  color: #f8fafc;
+  color: #1f2937;
   margin-bottom: 8px;
 }
 
@@ -109,7 +109,7 @@ input, textarea {
   border-radius: 12px;
   width: 100%;
   background: rgba(51, 65, 85, 0.5);
-  color: #f8fafc;
+  color: #1f2937;
   font-family: 'Poppins', sans-serif;
   transition: all 0.3s ease;
 }
@@ -163,7 +163,7 @@ button:hover {
 
 .other-info-section p {
   font-size: 1rem;
-  color: #555;
+  color: #1f2937;
 }
 
 @media (max-width: 768px) {

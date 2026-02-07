@@ -30,7 +30,7 @@ const CaseDashboard = () => {
   const [showLegalDict, setShowLegalDict] = useState(false);
   const [legalTerm, setLegalTerm] = useState('');
 
-  // Load case history from localStorage
+  // Load case history and related data from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('caseHistory');
     if (saved) {
@@ -45,14 +45,6 @@ const CaseDashboard = () => {
       setBookmarked(JSON.parse(savedBookmarks));
     }
   }, [caseName]);
-
-  // Load case history from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('caseHistory');
-    if (saved) {
-      setCaseHistory(JSON.parse(saved));
-    }
-  }, []);
 
   // Save case to history
   const saveCaseToHistory = (caseData) => {
@@ -97,21 +89,99 @@ const CaseDashboard = () => {
   };
 
   // Export PDF
-  const exportPDF = () => {
+  const exportPDF = async () => {
+    if (!analysis || !caseName) {
+      toast.error('Please upload and analyze a case first!');
+      return;
+    }
+    
     toast.loading('Generating PDF report...');
-    const element = document.getElementById('pdf-report-content');
+    
+    // Create HTML content as string
+    const htmlContent = `
+      <div style="padding: 40px; font-family: Arial, sans-serif; background: white; color: black;">
+        <h1 style="text-align: center; color: #2563EB; margin-bottom: 10px;">Legal Case Analysis Report</h1>
+        <h2 style="text-align: center; color: #333; margin-bottom: 5px;">${caseName || 'Untitled Case'}</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">Generated on ${new Date().toLocaleDateString()}</p>
+        <hr style="border: 1px solid #ddd; margin-bottom: 30px;" />
+        
+        <h2 style="color: #2563EB;">Case Overview</h2>
+        <p><strong>Case Type:</strong> ${analysis?.case_type || 'N/A'}</p>
+        <p><strong>Jurisdiction:</strong> ${analysis?.jurisdiction || 'N/A'}</p>
+        <p><strong>Complexity Score:</strong> ${analysis?.complexity_score || 0}/100</p>
+        
+        <h3 style="color: #2563EB; margin-top: 20px;">Applicable Sections</h3>
+        <p>${analysis?.sections?.join(', ') || 'N/A'}</p>
+        
+        <h3 style="color: #2563EB; margin-top: 20px;">Key Facts</h3>
+        <ul>
+          ${analysis?.key_facts?.map(fact => `<li>${fact}</li>`).join('') || '<li>N/A</li>'}
+        </ul>
+        
+        ${riskData ? `
+          <h2 style="color: #2563EB; margin-top: 30px;">Risk Analysis</h2>
+          <p><strong>Overall Risk:</strong> ${riskData.overall_risk || 'N/A'}</p>
+          <p><strong>Legal Penalty Probability:</strong> ${riskData.legal_penalty_probability || 0}%</p>
+          <p><strong>Financial Risk:</strong> ${riskData.financial_risk || 0}%</p>
+          <p><strong>Urgency Level:</strong> ${riskData.urgency_level || 0}%</p>
+          <p>${riskData.risk_explanation || ''}</p>
+        ` : ''}
+        
+        ${strengthData ? `
+          <h2 style="color: #2563EB; margin-top: 30px;">Case Strength</h2>
+          <p><strong>Strength Score:</strong> ${strengthData.strength_score || 0}/100</p>
+          <p><strong>Win Probability:</strong> ${strengthData.win_probability || 0}%</p>
+          <p><strong>Overall Assessment:</strong> ${strengthData.overall_strength || 'N/A'}</p>
+          
+          <h3 style="color: #2563EB; margin-top: 20px;">Strengths</h3>
+          <ul>
+            ${(strengthData.strengths || strengthData.strong_points || []).map(s => 
+              `<li>${typeof s === 'string' ? s : s.aspect || s.description || s}</li>`
+            ).join('') || '<li>N/A</li>'}
+          </ul>
+          
+          <h3 style="color: #2563EB; margin-top: 20px;">Weaknesses</h3>
+          <ul>
+            ${(strengthData.weaknesses || strengthData.weak_points || []).map(w => 
+              `<li>${typeof w === 'string' ? w : w.aspect || w.description || w}</li>`
+            ).join('') || '<li>N/A</li>'}
+          </ul>
+        ` : ''}
+        
+        ${precedents && precedents.length > 0 ? `
+          <h2 style="color: #2563EB; margin-top: 30px;">Relevant Precedents</h2>
+          ${precedents.map(prec => `
+            <div style="margin-bottom: 20px; border-left: 3px solid #9333ea; padding-left: 15px;">
+              <p><strong>${prec.title || prec.case_name || 'Case'}</strong></p>
+              <p style="color: #666; font-size: 14px;"><em>${prec.citation || 'N/A'}</em></p>
+              ${prec.verdict ? `<p><strong>Verdict:</strong> ${prec.verdict}</p>` : ''}
+              ${prec.reasoning ? `<p><strong>Court Reasoning:</strong> ${prec.reasoning}</p>` : ''}
+              <p><strong>Relevance:</strong> ${prec.relevance || 'N/A'}</p>
+              ${prec.keyTakeaway ? `<p><strong>Key Takeaway:</strong> ${prec.keyTakeaway}</p>` : ''}
+              ${prec.similarity ? `<p style="color: #9333ea;"><strong>Similarity:</strong> ${prec.similarity}%</p>` : ''}
+            </div>
+          `).join('')}
+        ` : ''}
+      </div>
+    `;
+    
     const opt = {
-      margin: 0.5,
-      filename: `${caseName || 'case-report'}-${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      margin: 10,
+      filename: `${caseName.replace(/[^a-z0-9]/gi, '_')}-report.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    html2pdf().set(opt).from(element).save().then(() => {
+    try {
+      await html2pdf().from(htmlContent).set(opt).save();
       toast.dismiss();
-      toast.success('PDF downloaded successfully!');
-    });
+      toast.success('PDF downloaded!');
+    } catch (err) {
+      console.error('PDF error:', err);
+      toast.dismiss();
+      toast.error('PDF generation failed');
+    }
   };
 
   // Copy to clipboard
@@ -457,119 +527,116 @@ const handleCaseUpload = async (e) => {
   if (!file) return;
 
   console.log('📤 Starting upload:', file.name);
+  
+  // Clear previous case data from state AND localStorage
+  setAnalysis(null);
+  setRiskData(null);
+  setStrengthData(null);
+  setPrecedents([]);
+  setTimeline([]);
+  setEvidence([]);
+  
+  // Clear localStorage to prevent old data showing
+  const newCaseName = file.name.replace(/\.[^/.]+$/, '');
+  localStorage.removeItem(`notes_${caseName}`);
+  localStorage.removeItem(`notes_${newCaseName}`);
+  
+  setCaseName(newCaseName);
+  
   setLoading(true);
   setUploadProgress(20);
 
   try {
-    const text = await file.text();
+    let text = '';
+    
+    // Handle PDF vs text files differently
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      console.log('📄 PDF detected - sending to backend for extraction...');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const pdfRes = await fetch('http://localhost:8001/api/extract-pdf-text', {
+        method: 'POST',
+        body: formData
+      });
+      const pdfData = await pdfRes.json();
+      text = pdfData.text || '';
+      console.log('✅ PDF text extracted by backend, length:', text.length);
+    } else {
+      // Text file - read directly
+      text = await file.text();
+      console.log('📄 Text file extracted, length:', text.length);
+    }
+    
     setCaseText(text);
-    setUploadProgress(40);
-    console.log('📄 File text extracted, length:', text.length);
+    setUploadProgress(20);
 
-    // ANALYZE CASE
-    console.log('🔄 Calling /api/analyze-case...');
+    // STEP 1: First get the analysis (needed for other calls)
+    console.log('🔄 Step 1: Analyzing case...');
     const analysisRes = await fetch('http://localhost:8001/api/analyze-case', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ case_text: text })
     });
-    
-    console.log('📊 Analysis response status:', analysisRes.status);
     const analysisData = await analysisRes.json();
-    console.log('📊 Analysis raw data:', analysisData);
-    
     const parsedAnalysis = parseAIResponse(analysisData.analysis);
-    console.log('📊 Parsed analysis:', parsedAnalysis);
+    console.log('✅ Analysis complete');
     
     setAnalysis(parsedAnalysis || { raw: true, error: 'Parse failed' });
-    setUploadProgress(60);
+    setUploadProgress(40);
 
-    // CALCULATE RISK
-    console.log('🔄 Calling /api/calculate-risk...');
-    const riskRes = await fetch('http://localhost:8001/api/calculate-risk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        case_details: parsedAnalysis || {},
-        evidence: evidence 
-      })
-    });
+    // STEP 2: Make all remaining calls in PARALLEL for speed
+    console.log('🚀 Step 2: Running parallel analysis (risk, strength, precedents, timeline)...');
     
-    console.log('⚠️ Risk response status:', riskRes.status);
-    const riskResData = await riskRes.json();
-    console.log('⚠️ Risk raw data:', riskResData);
-    console.log('⚠️ Risk analysis field:', riskResData.risk_analysis);
-    console.log('⚠️ Risk analysis type:', typeof riskResData.risk_analysis);
-    
-    const parsedRisk = parseAIResponse(riskResData.risk_analysis);
-    console.log('⚠️ Parsed risk:', parsedRisk);
-    
-    setRiskData(parsedRisk);
-    setUploadProgress(80);
-
-    // CALCULATE STRENGTH
-    console.log('🔄 Calling /api/case-strength...');
-    const strengthRes = await fetch('http://localhost:8001/api/case-strength', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        case_info: parsedAnalysis || {},
-        evidence: evidence 
-      })
-    });
-    
-    console.log('💪 Strength response status:', strengthRes.status);
-    const strengthResData = await strengthRes.json();
-    console.log('💪 Strength raw data:', strengthResData);
-    
-    const parsedStrength = parseAIResponse(strengthResData.strength_analysis);
-    console.log('💪 Parsed strength:', parsedStrength);
-    
-    setStrengthData(parsedStrength);
-    setUploadProgress(90);
-
-    // FIND PRECEDENTS
-    let parsedPrecedents = [];
-    if (parsedAnalysis) {
-      console.log('🔄 Calling /api/find-precedents...');
-      const precedentRes = await fetch('http://localhost:8001/api/find-precedents', {
+    const [riskResData, strengthResData, precedentData, timelineData] = await Promise.all([
+      // Risk Analysis
+      fetch('http://localhost:8001/api/calculate-risk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_details: parsedAnalysis || {}, evidence: evidence })
+      }).then(r => r.json()),
+      
+      // Strength Analysis
+      fetch('http://localhost:8001/api/case-strength', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_info: parsedAnalysis || {}, evidence: evidence })
+      }).then(r => r.json()),
+      
+      // Precedents
+      fetch('http://localhost:8001/api/find-precedents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          case_description: parsedAnalysis.key_facts?.join(' ') || text.slice(0, 500),
-          case_type: parsedAnalysis.case_type || 'General'
+          case_description: parsedAnalysis?.key_facts?.join(' ') || text.slice(0, 500),
+          case_type: parsedAnalysis?.case_type || 'General'
         })
-      });
+      }).then(r => r.json()),
       
-      console.log('🔍 Precedent response status:', precedentRes.status);
-      const precedentData = await precedentRes.json();
-      console.log('🔍 Precedent raw data:', precedentData);
-      
-      parsedPrecedents = parseAIResponse(precedentData.precedents);
-      console.log('🔍 Parsed precedents:', parsedPrecedents);
-      
-      setPrecedents(Array.isArray(parsedPrecedents) ? parsedPrecedents : []);
-    }
+      // Timeline
+      fetch('http://localhost:8001/api/generate-timeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          case_type: parsedAnalysis?.case_type || 'Criminal',
+          jurisdiction: parsedAnalysis?.jurisdiction || 'District Court',
+          filing_date: new Date().toISOString().split('T')[0]
+        })
+      }).then(r => r.json())
+    ]);
 
-    // GENERATE TIMELINE
-    console.log('🔄 Calling /api/generate-timeline...');
-    const timelineRes = await fetch('http://localhost:8001/api/generate-timeline', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        case_type: parsedAnalysis?.case_type || 'Criminal',
-        jurisdiction: parsedAnalysis?.jurisdiction || 'District Court',
-        filing_date: new Date().toISOString().split('T')[0]
-      })
-    });
+    console.log('✅ All parallel calls complete!');
+    setUploadProgress(80);
     
-    console.log('📅 Timeline response status:', timelineRes.status);
-    const timelineData = await timelineRes.json();
-    console.log('📅 Timeline raw data:', timelineData);
-    
+    // Parse all responses
+    const parsedRisk = parseAIResponse(riskResData.risk_analysis);
+    const parsedStrength = parseAIResponse(strengthResData.strength_analysis);
+    const parsedPrecedents = parseAIResponse(precedentData.precedents);
     const parsedTimeline = parseAIResponse(timelineData.timeline);
-    console.log('📅 Parsed timeline:', parsedTimeline);
     
+    setRiskData(parsedRisk);
+    setStrengthData(parsedStrength);
+    setPrecedents(Array.isArray(parsedPrecedents) ? parsedPrecedents : []);
     setTimeline(Array.isArray(parsedTimeline) ? parsedTimeline : []);
 
     setUploadProgress(100);
@@ -615,7 +682,7 @@ const handleEvidenceUpload = async (e) => {
   formData.append('file', file);
 
   try {
-    const res = await fetch('http://localhost:8001/api/upload-evidence', {
+    const res = await fetch('http://localhost:8002/api/upload-evidence', {
       method: 'POST',
       body: formData
     });
@@ -686,14 +753,14 @@ const handleEvidenceUpload = async (e) => {
       )}
 
       {/* Hidden PDF Report Content */}
-      <div id="pdf-report-content" style={{ position: 'absolute', left: '-9999px', width: '800px' }}>
-        <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-          <h1 style={{ textAlign: 'center', color: '#2563EB' }}>Legal Case Analysis Report</h1>
-          <h2 style={{ textAlign: 'center' }}>{caseName || 'Untitled Case'}</h2>
-          <p style={{ textAlign: 'center', color: '#666' }}>
+      <div id="pdf-report-content" className="pdf-content-hidden">
+        <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', backgroundColor: 'white', color: 'black' }}>
+          <h1 style={{ textAlign: 'center', color: '#2563EB', marginBottom: '10px' }}>Legal Case Analysis Report</h1>
+          <h2 style={{ textAlign: 'center', color: '#333', marginBottom: '5px' }}>{caseName || 'Untitled Case'}</h2>
+          <p style={{ textAlign: 'center', color: '#666', marginBottom: '30px' }}>
             Generated on {new Date().toLocaleDateString()}
           </p>
-          <hr />
+          <hr style={{ border: '1px solid #ddd', marginBottom: '30px' }} />
           
           {analysis && (
             <>
@@ -724,19 +791,73 @@ const handleEvidenceUpload = async (e) => {
             <>
               <h2>Case Strength</h2>
               <p><strong>Strength Score:</strong> {strengthData.strength_score}/100</p>
-              <p><strong>Win Probability:</strong> {strengthData.win_probability}%</p>
+              <p><strong>Win Probability:</strong> {strengthData.win_probability || 0}%</p>
+              <p><strong>Overall Assessment:</strong> {strengthData.overall_strength}</p>
               <h3>Strengths</h3>
               <ul>
-                {strengthData.strengths?.map((s, i) => (
-                  <li key={i}>{typeof s === 'string' ? s : s.aspect || s.description}</li>
+                {(strengthData.strengths || strengthData.strong_points || []).map((s, i) => (
+                  <li key={i}>{typeof s === 'string' ? s : s.aspect || s.description || s}</li>
                 ))}
               </ul>
               <h3>Weaknesses</h3>
               <ul>
-                {strengthData.weaknesses?.map((w, i) => (
-                  <li key={i}>{typeof w === 'string' ? w : w.aspect || w.description}</li>
+                {(strengthData.weaknesses || strengthData.weak_points || []).map((w, i) => (
+                  <li key={i}>{typeof w === 'string' ? w : w.aspect || w.description || w}</li>
                 ))}
               </ul>
+            </>
+          )}
+          
+          {precedents && precedents.length > 0 && (
+            <>
+              <h2>Relevant Precedents</h2>
+              {precedents.map((prec, i) => (
+                <div key={i} style={{ marginBottom: '20px', borderLeft: '3px solid #9333ea', paddingLeft: '15px' }}>
+                  <p><strong>{prec.title || prec.case_name || `Case ${i+1}`}</strong></p>
+                  <p style={{ color: '#666', fontSize: '14px' }}><em>{prec.citation || 'N/A'}</em></p>
+                  {prec.verdict && (
+                    <>
+                      <p><strong>Verdict:</strong> {prec.verdict}</p>
+                    </>
+                  )}
+                  {prec.reasoning && (
+                    <>
+                      <p><strong>Court Reasoning:</strong> {prec.reasoning}</p>
+                    </>
+                  )}
+                  <p><strong>Relevance:</strong> {prec.relevance}</p>
+                  {prec.keyTakeaway && (
+                    <>
+                      <p><strong>Key Takeaway:</strong> {prec.keyTakeaway}</p>
+                    </>
+                  )}
+                  {prec.similarity && <p style={{ color: '#9333ea' }}><strong>Similarity:</strong> {prec.similarity}%</p>}
+                </div>
+              ))}
+            </>
+          )}
+          
+          {timeline && timeline.length > 0 && (
+            <>
+              <h2>Expected Timeline</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Stage</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Date</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeline.map((event, i) => (
+                    <tr key={i}>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{event.stage}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{event.date}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{event.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </>
           )}
         </div>

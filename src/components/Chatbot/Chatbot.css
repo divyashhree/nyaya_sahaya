@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0f0a1a 0%, #1a1625 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   padding: 2rem;
   padding-bottom: 4rem;
   box-sizing: border-box;
@@ -371,7 +371,7 @@
 }
 
 .input-field-wrapper:focus-within {
-  border-color: #9333ea;
+  border-color: #667eea;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
 }
@@ -388,7 +388,7 @@
 }
 
 .chat-input-modern::placeholder {
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 .chat-input-modern:disabled {
