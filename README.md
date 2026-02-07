@@ -147,7 +147,7 @@ pip install -r requirements.txt
 # GROQ_API_KEY=your_groq_api_key
 
 # Start backend server
-uvicorn app:app --reload --port 8001
+python -m uvicorn app:app --reload --port 8001
 ```
 Backend runs on `http://localhost:8001`
 
@@ -186,7 +186,7 @@ git checkout groq  # Use the groq branch for latest features
 cd NyayaSahaya-bot
 pip install -r requirements.txt
 # Add GROQ_API_KEY to .env
-uvicorn app:app --reload --port 8001
+python -m uvicorn app:app --reload --port 8001
 ```
 
 3. **Start Frontend** (in new terminal)
@@ -294,7 +294,7 @@ pip install -r requirements.txt
 
 5. Start the services:
 - Frontend: `npm start`
-- Backend: `uvicorn app:app --reload`
+- Backend: `python -m uvicorn app:app --reload`
 - Document Generator: `streamlit run doc_generator.py`
 
 ## Best Practices
